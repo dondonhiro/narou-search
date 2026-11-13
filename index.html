@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My なろう検索</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f4f6f9;
+      color: #333;
+      margin: 0;
+      padding: 12px;
+      line-height: 1.5;
+    }
+    .container { max-width: 600px; margin: 0 auto; }
+    h1 { font-size: 18px; margin: 0 0 12px 0; color: #1a202c; }
+    .preset-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .preset-btn {
+      background: #2b6cb0;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: bold;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .preset-btn:active { background: #2c5282; }
+    .search-box {
+      background: white;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 16px;
+    }
+    .form-row { margin-bottom: 10px; }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: bold;
+      color: #4a5568;
+      margin-bottom: 4px;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .row-flex { display: flex; gap: 8px; }
+    .row-flex > div { flex: 1; }
+    .search-btn {
+      width: 100%;
+      background: #38a169;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .search-btn:active { background: #2f855a; }
+    #status {
+      font-size: 13px;
+      color: #4a5568;
+      margin-bottom: 10px;
+      text-align: center;
+      font-weight: bold;
+    }
+    .novel-card {
+      background: white;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .novel-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #2b6cb0;
+      text-decoration: none;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .novel-meta {
+      font-size: 12px;
+      color: #718096;
+      margin-bottom: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .badge {
+      background: #edf2f7;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .badge-end { background: #e6fffa; color: #234e52; }
+    .badge-ongoing { background: #ebf8ff; color: #2a4365; }
+    .novel-keywords {
+      font-size: 11px;
+      color: #4a5568;
+      background: #f7fafc;
+      padding: 6px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .novel-story {
+      font-size: 13px;
+      color: #2d3748;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .novel-story.expanded { -webkit-line-clamp: unset; }
+    .expand-hint {
+      font-size: 11px;
+      color: #3182ce;
+      margin-top: 4px;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📖 My なろう検索</h1>
+
+    <div class="preset-group">
+      <button type="button" class="preset-btn" onclick="applyPreset('adventure')">⚔️ 冒険×最強</button>
+      <button type="button" class="preset-btn" onclick="applyPreset('skill')">✨ スキル成長</button>
+      <button type="button" class="preset-btn" onclick="applyPreset('completed')">📚 完結一気読み</button>
+    </div>
+
+    <div class="search-box">
+      <div class="form-row">
+        <label>検索ワード（スペース区切りでAND検索）</label>
+        <input type="text" id="word" value="主人公最強 冒険">
+      </div>
+      <div class="form-row">
+        <label>除外ワード（地雷回避）</label>
+        <input type="text" id="notword" value="鬱 敗北 バッドエンド NTR 残酷 悲劇">
+      </div>
+      <div class="row-flex form-row">
+        <div>
+          <label>連載状態</label>
+          <select id="type">
+            <option value="">すべて（長編）</option>
+            <option value="er">完結済みのみ</option>
+            <option value="r">連載中のみ</option>
+          </select>
+        </div>
+        <div>
+          <label>最低文字数</label>
+          <select id="minlen">
+            <option value="50000" selected>5万文字以上</option>
+            <option value="100000">10万文字以上</option>
+            <option value="300000">30万文字以上</option>
+            <option value="10000">1万文字以上</option>
+          </select>
+        </div>
+        <div>
+          <label>並び順</label>
+          <select id="order">
+            <option value="hyoka" selected>総合評価順</option>
+            <option value="weekly">週間ポイント順</option>
+            <option value="new">新着更新順</option>
+          </select>
+        </div>
+      </div>
+      <button type="button" class="search-btn" onclick="runSearch()">この条件で検索する</button>
+    </div>
+
+    <div id="status">初期化中...</div>
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const baseNotWord = "鬱 敗北 バッドエンド NTR 残酷 悲劇";
+
+    function applyPreset(preset) {
+      if (preset === 'adventure') {
+        document.getElementById('word').value = "主人公最強 冒険";
+        document.getElementById('notword').value = baseNotWord;
+        document.getElementById('type').value = "";
+        document.getElementById('minlen').value = "50000";
+        document.getElementById('order').value = "hyoka";
+      } else if (preset === 'skill') {
+        document.getElementById('word').value = "スキル ダンジョン";
+        document.getElementById('notword').value = baseNotWord;
+        document.getElementById('type').value = "r";
+        document.getElementById('minlen').value = "50000";
+        document.getElementById('order').value = "weekly";
+      } else if (preset === 'completed') {
+        document.getElementById('word').value = "主人公最強 スキル";
+        document.getElementById('notword').value = baseNotWord;
+        document.getElementById('type').value = "er";
+        document.getElementById('minlen').value = "100000";
+        document.getElementById('order').value = "hyoka";
+      }
+      runSearch();
+    }
+
+    function runSearch() {
+      const statusEl = document.getElementById('status');
+      const resultsEl = document.getElementById('results');
+      statusEl.textContent = "なろうAPIから作品を取得中...";
+      resultsEl.innerHTML = "";
+
+      const oldScript = document.getElementById('narou-jsonp');
+      if (oldScript) oldScript.remove();
+
+      const queryParams = {
+        out: 'jsonp',
+        callback: 'handleNarouResponse',
+        lim: 30,
+        order: document.getElementById('order').value || 'hyoka',
+        word: document.getElementById('word').value.trim(),
+        notword: document.getElementById('notword').value.trim(),
+        type: document.getElementById('type').value,
+        minlen: document.getElementById('minlen').value || 50000
+      };
+
+      const queryString = Object.keys(queryParams)
+        .filter(function(key) { return queryParams[key] !== ''; })
+        .map(function(key) { return key + '=' + encodeURIComponent(queryParams[key]); })
+        .join('&');
+
+      const script = document.createElement('script');
+      script.id = 'narou-jsonp';
+      script.src = 'https://syosetu.com?' + queryString;
+      script.onerror = function() {
+        statusEl.textContent = "APIとの通信に失敗しました。";
+      };
+      document.body.appendChild(script);
+    }
+
+    function handleNarouResponse(data) {
+      const statusEl = document.getElementById('status');
+      const resultsEl = document.getElementById('results');
+
+      if (!Array.isArray(data) || data.length === 0) {
+        statusEl.textContent = "データの取得に失敗しました。";
+        return;
+      }
+
+      const totalCount = data.allcount || 0;
+      const novels = data.slice(1);
+
+      statusEl.textContent = "ヒット件数: " + Number(totalCount).toLocaleString() + " 件（上位 " + novels.length + " 件を表示）";
+
+      if (novels.length === 0) {
+        resultsEl.innerHTML = "<p style='text-align:center;'>条件に合う作品が見つかりませんでした。</p>";
+        return;
+      }
+
+      for (let i = 0; i < novels.length; i++) {
+        const novel = novels[i];
+        const url = "https://syosetu.com" + String(novel.ncode).toLowerCase() + "/";
+        const isEnd = Number(novel.end) === 0;
+        const statusBadge = isEnd
+          ? '<span class="badge badge-end">完結済</span>'
+          : '<span class="badge badge-ongoing">連載中</span>';
+        const charCount = (Math.round(Number(novel.length) / 10000 * 10) / 10) + "万文字";
+        const updateDate = novel.general_lastup ? String(novel.general_lastup).substring(0, 10) : "";
+
+        const card = document.createElement('div');
+        card.className = 'novel-card';
+        card.innerHTML =
+          '<a href="' + url + '" target="_blank" rel="noopener" class="novel-title">' + escapeHtml(novel.title) + '</a>' +
+          '<div class="novel-meta">' +
+            statusBadge +
+            '<span class="badge">' + charCount + '</span>' +
+            '<span>更新: ' + updateDate + '</span>' +
+          '</div>' +
+          '<div class="novel-keywords">' + escapeHtml(novel.keyword) + '</div>' +
+          '<div class="novel-story" onclick="this.classList.toggle(\'expanded\')">' + escapeHtml(novel.story) + '</div>' +
+          '<div class="expand-hint">※あらすじタップで全文表示</div>';
+        resultsEl.appendChild(card);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[m];
+      });
+    }
+
+    window.addEventListener('load', runSearch);
+  </script>
+</body>
+</html>
